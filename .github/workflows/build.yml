@@ -18,37 +18,31 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          # Pin to a stable Python to avoid nbconvert/widget edge cases
           python-version: "3.11"
 
-      - name: Install Jupyter
-        run: pip install jupyter nbconvert
+      - name: Install dependencies
+        run: |
+          pip install jupyter nbconvert nbformat ipywidgets
 
       - name: Build site
         run: |
-          set -e
-
           rm -rf site
           mkdir -p site
 
-          find notebooks -name "*.ipynb" -print0 | while IFS= read -r -d '' nb; do
-            slug=$(dirname "$nb" | sed 's|^notebooks/||')
+          for nb in notebooks/*/*.ipynb; do
+            slug=$(dirname "$nb" | sed 's|notebooks/||')
             out_dir="site/$slug"
+
             mkdir -p "$out_dir"
 
-            echo "Converting: $nb -> $out_dir/notebook.html"
-
-            # Produce downloadable HTML (classic template avoids widget-state failures)
             jupyter nbconvert \
-              --to html "$nb" \
-              --template classic \
+              --to html \
+              --no-input \
+              "$nb" \
               --output notebook.html \
               --output-dir "$out_dir"
 
-            # Clean viewing URL via index.html (so /<slug>/ works)
             cp "$out_dir/notebook.html" "$out_dir/index.html"
-
-            # Copy originals for download
             cp "$nb" "$out_dir/notebook.ipynb"
 
             py_file="${nb%.ipynb}.py"
@@ -56,13 +50,13 @@ jobs:
               cp "$py_file" "$out_dir/notebook.py"
             fi
 
-            # Copy assets if they exist
             if [ -d "notebooks/$slug/assets" ]; then
               cp -r "notebooks/$slug/assets" "$out_dir/"
             fi
           done
 
-          # Build homepage index with view + download links
+      - name: Build homepage
+        run: |
           python - << 'PY'
           import os
 
@@ -80,33 +74,24 @@ jobs:
               ".card{padding:16px 0;border-bottom:1px solid #eee}",
               ".title{font-size:18px;font-weight:650}",
               ".links a{margin-right:14px}",
-              ".meta{color:#555;font-size:13px;margin-top:4px}",
               "</style></head><body>",
-              "<h1>AI Case Studies</h1>",
-              "<p>View each case study, or download the artifacts:</p>"
+              "<h1>AI Case Studies</h1>"
           ]
 
           for slug in slugs:
-              title = slug.replace("__", " | ").replace("-", " ").title()
-              view = f"./{slug}/"
-              dl_html = f"./{slug}/notebook.html"
-              dl_ipynb = f"./{slug}/notebook.ipynb"
-              dl_py = f"./{slug}/notebook.py"
-
+              title = slug.replace("__"," | ").replace("-"," ").title()
               html.append("<div class='card'>")
               html.append(f"<div class='title'>{title}</div>")
-              html.append("<div class='links'>"
-                          f"<a href='{view}'>View</a>"
-                          f"<a href='{dl_html}' download>Download HTML</a>"
-                          f"<a href='{dl_ipynb}' download>Download .ipynb</a>"
-                          f"<a href='{dl_py}' download>Download .py</a>"
-                          "</div>")
-              html.append(f"<div class='meta'>Slug: {slug}</div>")
+              html.append(
+                  f"<a href='./{slug}/'>View</a> | "
+                  f"<a href='./{slug}/notebook.ipynb'>Download Notebook</a> | "
+                  f"<a href='./{slug}/notebook.py'>Download Python</a>"
+              )
               html.append("</div>")
 
-          html += ["</body></html>"]
+          html.append("</body></html>")
 
-          with open("site/index.html", "w", encoding="utf-8") as f:
+          with open("site/index.html","w") as f:
               f.write("\n".join(html))
           PY
 
