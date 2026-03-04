@@ -3,6 +3,7 @@ name: Build Notebooks
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -15,42 +16,76 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Python (pin stable)
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Jupyter + nbconvert
+      - name: Install build deps
         run: |
           python -m pip install --upgrade pip
-          pip install "nbconvert>=7" jupyter
+          pip install nbconvert nbformat jupyter
+
+      # --- IMPORTANT FIX ---
+      # Remove broken widget metadata that causes nbconvert KeyError: 'state'
+      - name: Sanitize notebooks (fix widgets metadata)
+        run: |
+          python - << 'PY'
+          import json
+          from pathlib import Path
+
+          for nb_path in Path("notebooks").rglob("*.ipynb"):
+              # Ignore any notebook accidentally placed under assets/
+              if "assets" in nb_path.parts:
+                  continue
+
+              try:
+                  data = json.loads(nb_path.read_text(encoding="utf-8"))
+              except Exception as e:
+                  print(f"[SKIP] Could not read JSON: {nb_path} ({e})")
+                  continue
+
+              md = data.get("metadata", {})
+              widgets = md.get("widgets")
+
+              # nbconvert crashes when widgets metadata exists but lacks state
+              # safest is to remove widgets metadata entirely in that situation
+              changed = False
+              if isinstance(widgets, dict):
+                  # common key used for widget state
+                  key = "application/vnd.jupyter.widget-state+json"
+                  if key in widgets and isinstance(widgets[key], dict) and "state" not in widgets[key]:
+                      md.pop("widgets", None)
+                      data["metadata"] = md
+                      changed = True
+                  # sometimes widgets metadata exists but isn't well-formed
+                  elif key in widgets and not isinstance(widgets[key], dict):
+                      md.pop("widgets", None)
+                      data["metadata"] = md
+                      changed = True
+
+              if changed:
+                  nb_path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+                  print(f"[FIXED] Removed broken widgets metadata: {nb_path}")
+          PY
 
       - name: Build site
-        shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
           rm -rf site
           mkdir -p site
 
-          # Find notebooks, but IGNORE anything under any /assets/ folder
-          find notebooks \
-            -path "*/assets/*" -prune -o \
-            -name "*.ipynb" -print0 | while IFS= read -r -d '' nb; do
-
+          # Only convert notebooks NOT inside assets/
+          find notebooks -name "*.ipynb" -not -path "*/assets/*" -print0 | while IFS= read -r -d '' nb; do
             slug=$(dirname "$nb" | sed 's|^notebooks/||')
             out_dir="site/$slug"
             mkdir -p "$out_dir"
 
-            # Produce downloadable HTML (classic template avoids widget-state crashes)
-            jupyter nbconvert \
-              --to html \
-              --template classic \
-              "$nb" \
-              --output "notebook.html" \
-              --output-dir "$out_dir"
+            # Convert to HTML (downloadable)
+            jupyter nbconvert --to html "$nb" --output notebook.html --output-dir "$out_dir"
 
-            # Clean viewing URL via index.html (so /<slug>/ works)
+            # Make /<slug>/ load nicely
             cp "$out_dir/notebook.html" "$out_dir/index.html"
 
             # Copy originals for download
@@ -61,21 +96,23 @@ jobs:
               cp "$py_file" "$out_dir/notebook.py"
             fi
 
-            # Copy assets if they exist
+            # Copy assets folder if present
             if [ -d "notebooks/$slug/assets" ]; then
               cp -r "notebooks/$slug/assets" "$out_dir/"
             fi
           done
 
-          # Build homepage index with view + download links
+          # Build homepage index + urls.txt (handy for Figma Sites linking)
           python - << 'PY'
           import os
 
+          base = "https://evagaiml.github.io/000-website-notebooks"
           slugs = sorted([
               d for d in os.listdir("site")
               if os.path.isdir(os.path.join("site", d))
           ])
 
+          # index.html
           html = [
               "<html><head><meta charset='utf-8'>",
               "<meta name='viewport' content='width=device-width, initial-scale=1'>",
@@ -113,6 +150,16 @@ jobs:
 
           with open("site/index.html", "w", encoding="utf-8") as f:
               f.write("\n".join(html))
+
+          # urls.txt (for Figma Sites links)
+          with open("site/urls.txt", "w", encoding="utf-8") as f:
+              for slug in slugs:
+                  f.write(f"{slug}\n")
+                  f.write(f"VIEW: {base}/{slug}/\n")
+                  f.write(f"HTML: {base}/{slug}/notebook.html\n")
+                  f.write(f"IPYNB: {base}/{slug}/notebook.ipynb\n")
+                  f.write(f"PY: {base}/{slug}/notebook.py\n")
+                  f.write("\n")
           PY
 
       - name: Deploy to GitHub Pages
