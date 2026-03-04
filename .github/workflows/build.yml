@@ -1,0 +1,108 @@
+name: Build Notebooks
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Jupyter
+        run: pip install jupyter nbconvert
+
+      - name: Build site
+        run: |
+          rm -rf site
+          mkdir -p site
+
+          find notebooks -name "*.ipynb" -print0 | while IFS= read -r -d '' nb; do
+            slug=$(dirname "$nb" | sed 's|^notebooks/||')
+            out_dir="site/$slug"
+            mkdir -p "$out_dir"
+
+            # Produce downloadable HTML
+            jupyter nbconvert --to html "$nb" --output notebook.html --output-dir "$out_dir"
+
+            # Clean viewing URL via index.html (so /<slug>/ works)
+            cp "$out_dir/notebook.html" "$out_dir/index.html"
+
+            # Copy originals for download
+            cp "$nb" "$out_dir/notebook.ipynb"
+
+            py_file="${nb%.ipynb}.py"
+            if [ -f "$py_file" ]; then
+              cp "$py_file" "$out_dir/notebook.py"
+            fi
+
+            # Copy assets if they exist
+            if [ -d "notebooks/$slug/assets" ]; then
+              cp -r "notebooks/$slug/assets" "$out_dir/"
+            fi
+          done
+
+          # Build homepage index with view + download links
+          python - << 'PY'
+          import os
+
+          slugs = sorted([
+              d for d in os.listdir("site")
+              if os.path.isdir(os.path.join("site", d))
+          ])
+
+          html = [
+              "<html><head><meta charset='utf-8'>",
+              "<meta name='viewport' content='width=device-width, initial-scale=1'>",
+              "<title>AI Case Studies</title>",
+              "<style>",
+              "body{font-family:system-ui;margin:40px;max-width:1100px}",
+              ".card{padding:16px 0;border-bottom:1px solid #eee}",
+              ".title{font-size:18px;font-weight:650}",
+              ".links a{margin-right:14px}",
+              ".meta{color:#555;font-size:13px;margin-top:4px}",
+              "</style></head><body>",
+              "<h1>AI Case Studies</h1>",
+              "<p>View each case study, or download the artifacts:</p>"
+          ]
+
+          for slug in slugs:
+              title = slug.replace("__", " | ").replace("-", " ").title()
+              view = f"./{slug}/"
+              dl_html = f"./{slug}/notebook.html"
+              dl_ipynb = f"./{slug}/notebook.ipynb"
+              dl_py = f"./{slug}/notebook.py"
+
+              html.append("<div class='card'>")
+              html.append(f"<div class='title'>{title}</div>")
+              html.append("<div class='links'>"
+                          f"<a href='{view}'>View</a>"
+                          f"<a href='{dl_html}' download>Download HTML</a>"
+                          f"<a href='{dl_ipynb}' download>Download .ipynb</a>"
+                          f"<a href='{dl_py}' download>Download .py</a>"
+                          "</div>")
+              html.append(f"<div class='meta'>Slug: {slug}</div>")
+              html.append("</div>")
+
+          html += ["</body></html>"]
+
+          with open("site/index.html", "w", encoding="utf-8") as f:
+              f.write("\n".join(html))
+          PY
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
