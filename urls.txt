@@ -1,9 +1,3 @@
-medical-diagnosis-assist__qa__rag-exp
-VIEW: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/
-HTML: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/notebook.html
-IPYNB: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/notebook.ipynb
-PY: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/notebook.py
-
 retail-revenue-forecast__reg__ensemble-exp
 VIEW: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/
 HTML: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/notebook.html
