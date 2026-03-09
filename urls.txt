@@ -1,29 +1,39 @@
 medical-diagnosis-assist__qa__rag-exp
 VIEW: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/
+COLAB: https://colab.research.google.com/github/EvagAIML/000-website-notebooks/blob/main/notebooks/medical-diagnosis-assist__qa__rag-exp/medical-diagnosis-assist__qa__rag-exp.ipynb
+ZIP: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/medical-diagnosis-assist__qa__rag-exp.zip
 HTML: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/notebook.html
 IPYNB: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/notebook.ipynb
 PY: https://evagaiml.github.io/000-website-notebooks/medical-diagnosis-assist__qa__rag-exp/notebook.py
 
 retail-revenue-forecast__reg__ensemble-exp
 VIEW: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/
+COLAB: https://colab.research.google.com/github/EvagAIML/000-website-notebooks/blob/main/notebooks/retail-revenue-forecast__reg__ensemble-exp/retail-revenue-forecast__reg__ensemble-exp.ipynb
+ZIP: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/retail-revenue-forecast__reg__ensemble-exp.zip
 HTML: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/notebook.html
 IPYNB: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/notebook.ipynb
 PY: https://evagaiml.github.io/000-website-notebooks/retail-revenue-forecast__reg__ensemble-exp/notebook.py
 
 seed-identification__multi-cls__cnn-tl-exp
 VIEW: https://evagaiml.github.io/000-website-notebooks/seed-identification__multi-cls__cnn-tl-exp/
+COLAB: https://colab.research.google.com/github/EvagAIML/000-website-notebooks/blob/main/notebooks/seed-identification__multi-cls__cnn-tl-exp/seed-identification__multi-cls__cnn-tl-exp.ipynb
+ZIP: https://evagaiml.github.io/000-website-notebooks/seed-identification__multi-cls__cnn-tl-exp/seed-identification__multi-cls__cnn-tl-exp.zip
 HTML: https://evagaiml.github.io/000-website-notebooks/seed-identification__multi-cls__cnn-tl-exp/notebook.html
 IPYNB: https://evagaiml.github.io/000-website-notebooks/seed-identification__multi-cls__cnn-tl-exp/notebook.ipynb
 PY: https://evagaiml.github.io/000-website-notebooks/seed-identification__multi-cls__cnn-tl-exp/notebook.py
 
 turbine-failure-pred__bin-cls__dnn-exp
 VIEW: https://evagaiml.github.io/000-website-notebooks/turbine-failure-pred__bin-cls__dnn-exp/
+COLAB: https://colab.research.google.com/github/EvagAIML/000-website-notebooks/blob/main/notebooks/turbine-failure-pred__bin-cls__dnn-exp/turbine-failure-pred__bin-cls__dnn-exp.ipynb
+ZIP: https://evagaiml.github.io/000-website-notebooks/turbine-failure-pred__bin-cls__dnn-exp/turbine-failure-pred__bin-cls__dnn-exp.zip
 HTML: https://evagaiml.github.io/000-website-notebooks/turbine-failure-pred__bin-cls__dnn-exp/notebook.html
 IPYNB: https://evagaiml.github.io/000-website-notebooks/turbine-failure-pred__bin-cls__dnn-exp/notebook.ipynb
 PY: https://evagaiml.github.io/000-website-notebooks/turbine-failure-pred__bin-cls__dnn-exp/notebook.py
 
 visa-approval-pred__bin-cls__ensemble-imb-exp
 VIEW: https://evagaiml.github.io/000-website-notebooks/visa-approval-pred__bin-cls__ensemble-imb-exp/
+COLAB: https://colab.research.google.com/github/EvagAIML/000-website-notebooks/blob/main/notebooks/visa-approval-pred__bin-cls__ensemble-imb-exp/visa-approval-pred__bin-cls__ensemble-imb-exp.ipynb
+ZIP: https://evagaiml.github.io/000-website-notebooks/visa-approval-pred__bin-cls__ensemble-imb-exp/visa-approval-pred__bin-cls__ensemble-imb-exp.zip
 HTML: https://evagaiml.github.io/000-website-notebooks/visa-approval-pred__bin-cls__ensemble-imb-exp/notebook.html
 IPYNB: https://evagaiml.github.io/000-website-notebooks/visa-approval-pred__bin-cls__ensemble-imb-exp/notebook.ipynb
 PY: https://evagaiml.github.io/000-website-notebooks/visa-approval-pred__bin-cls__ensemble-imb-exp/notebook.py
