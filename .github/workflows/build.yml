@@ -26,8 +26,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install nbconvert nbformat jupyter
 
-      # --- IMPORTANT FIX ---
-      # Remove broken widget metadata that causes nbconvert KeyError: 'state'
+      - name: Install zip utility
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      # Remove broken widget metadata that causes nbconvert errors
       - name: Sanitize notebooks (fix widgets metadata)
         run: |
           python - << 'PY'
@@ -35,7 +37,6 @@ jobs:
           from pathlib import Path
 
           for nb_path in Path("notebooks").rglob("*.ipynb"):
-              # Ignore any notebook accidentally placed under assets/
               if "assets" in nb_path.parts:
                   continue
 
@@ -48,24 +49,25 @@ jobs:
               md = data.get("metadata", {})
               widgets = md.get("widgets")
 
-              # nbconvert crashes when widgets metadata exists but lacks state
-              # safest is to remove widgets metadata entirely in that situation
               changed = False
               if isinstance(widgets, dict):
-                  # common key used for widget state
                   key = "application/vnd.jupyter.widget-state+json"
+
                   if key in widgets and isinstance(widgets[key], dict) and "state" not in widgets[key]:
                       md.pop("widgets", None)
                       data["metadata"] = md
                       changed = True
-                  # sometimes widgets metadata exists but isn't well-formed
+
                   elif key in widgets and not isinstance(widgets[key], dict):
                       md.pop("widgets", None)
                       data["metadata"] = md
                       changed = True
 
               if changed:
-                  nb_path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+                  nb_path.write_text(
+                      json.dumps(data, ensure_ascii=False, indent=1),
+                      encoding="utf-8"
+                  )
                   print(f"[FIXED] Removed broken widgets metadata: {nb_path}")
           PY
 
@@ -76,19 +78,21 @@ jobs:
           rm -rf site
           mkdir -p site
 
-          # Only convert notebooks NOT inside assets/
           find notebooks -name "*.ipynb" -not -path "*/assets/*" -print0 | while IFS= read -r -d '' nb; do
+
             slug=$(dirname "$nb" | sed 's|^notebooks/||')
+            base_name=$(basename "$nb" .ipynb)
+
             out_dir="site/$slug"
             mkdir -p "$out_dir"
 
-            # Convert to HTML (downloadable)
+            # Convert to HTML
             jupyter nbconvert --to html "$nb" --output notebook.html --output-dir "$out_dir"
 
-            # Make /<slug>/ load nicely
+            # Make nice URL
             cp "$out_dir/notebook.html" "$out_dir/index.html"
 
-            # Copy originals for download
+            # Copy originals
             cp "$nb" "$out_dir/notebook.ipynb"
 
             py_file="${nb%.ipynb}.py"
@@ -96,23 +100,32 @@ jobs:
               cp "$py_file" "$out_dir/notebook.py"
             fi
 
-            # Copy assets folder if present
+            # Copy assets
             if [ -d "notebooks/$slug/assets" ]; then
               cp -r "notebooks/$slug/assets" "$out_dir/"
             fi
+
+            # Create ZIP for downloads
+            (
+              cd "$out_dir"
+
+              zip -r "${slug}.zip" notebook.html notebook.ipynb notebook.py assets >/dev/null 2>&1 || \
+              zip -r "${slug}.zip" notebook.html notebook.ipynb notebook.py >/dev/null 2>&1
+            )
+
           done
 
-          # Build homepage index + urls.txt (handy for Figma Sites linking)
           python - << 'PY'
           import os
 
           base = "https://evagaiml.github.io/000-website-notebooks"
+          repo = "EvagAIML/000-website-notebooks"
+
           slugs = sorted([
               d for d in os.listdir("site")
               if os.path.isdir(os.path.join("site", d))
           ])
 
-          # index.html
           html = [
               "<html><head><meta charset='utf-8'>",
               "<meta name='viewport' content='width=device-width, initial-scale=1'>",
@@ -125,41 +138,48 @@ jobs:
               ".meta{color:#555;font-size:13px;margin-top:4px}",
               "</style></head><body>",
               "<h1>AI Case Studies</h1>",
-              "<p>View each case study, or download the artifacts:</p>"
+              "<p>View each case study, run it in Colab, or download the artifacts:</p>"
           ]
 
-          for slug in slugs:
-              title = slug.replace("__", " | ").replace("-", " ").title()
-              view = f"./{slug}/"
-              dl_html = f"./{slug}/notebook.html"
-              dl_ipynb = f"./{slug}/notebook.ipynb"
-              dl_py = f"./{slug}/notebook.py"
+          with open("site/urls.txt", "w", encoding="utf-8") as f:
 
-              html.append("<div class='card'>")
-              html.append(f"<div class='title'>{title}</div>")
-              html.append("<div class='links'>"
-                          f"<a href='{view}'>View</a>"
-                          f"<a href='{dl_html}' download>Download HTML</a>"
-                          f"<a href='{dl_ipynb}' download>Download .ipynb</a>"
-                          f"<a href='{dl_py}' download>Download .py</a>"
-                          "</div>")
-              html.append(f"<div class='meta'>Slug: {slug}</div>")
-              html.append("</div>")
+              for slug in slugs:
+
+                  view = f"{base}/{slug}/"
+                  html_dl = f"{base}/{slug}/notebook.html"
+                  ipynb_dl = f"{base}/{slug}/notebook.ipynb"
+                  py_dl = f"{base}/{slug}/notebook.py"
+                  zip_dl = f"{base}/{slug}/{slug}.zip"
+
+                  colab = f"https://colab.research.google.com/github/{repo}/blob/main/notebooks/{slug}/{slug}.ipynb"
+
+                  title = slug.replace("__", " | ").replace("-", " ").title()
+
+                  html.append("<div class='card'>")
+                  html.append(f"<div class='title'>{title}</div>")
+                  html.append("<div class='links'>"
+                              f"<a href='{view}'>View</a>"
+                              f"<a href='{colab}'>Run in Colab</a>"
+                              f"<a href='{zip_dl}'>Download Code</a>"
+                              f"<a href='{html_dl}' download>Download HTML</a>"
+                              f"<a href='{ipynb_dl}' download>Download .ipynb</a>"
+                              f"<a href='{py_dl}' download>Download .py</a>"
+                              "</div>")
+                  html.append(f"<div class='meta'>Slug: {slug}</div>")
+                  html.append("</div>")
+
+                  f.write(f"{slug}\n")
+                  f.write(f"VIEW: {view}\n")
+                  f.write(f"COLAB: {colab}\n")
+                  f.write(f"ZIP: {zip_dl}\n")
+                  f.write(f"HTML: {html_dl}\n")
+                  f.write(f"IPYNB: {ipynb_dl}\n")
+                  f.write(f"PY: {py_dl}\n\n")
 
           html += ["</body></html>"]
 
           with open("site/index.html", "w", encoding="utf-8") as f:
               f.write("\n".join(html))
-
-          # urls.txt (for Figma Sites links)
-          with open("site/urls.txt", "w", encoding="utf-8") as f:
-              for slug in slugs:
-                  f.write(f"{slug}\n")
-                  f.write(f"VIEW: {base}/{slug}/\n")
-                  f.write(f"HTML: {base}/{slug}/notebook.html\n")
-                  f.write(f"IPYNB: {base}/{slug}/notebook.ipynb\n")
-                  f.write(f"PY: {base}/{slug}/notebook.py\n")
-                  f.write("\n")
           PY
 
       - name: Deploy to GitHub Pages
