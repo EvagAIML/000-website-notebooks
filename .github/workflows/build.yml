@@ -2,15 +2,24 @@ name: Build Notebooks
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: {}
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+      REPO_PATH: ${{ github.repository }}
 
     steps:
       - name: Checkout repo
@@ -21,6 +30,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Install build deps
         run: |
           python -m pip install --upgrade pip
@@ -29,7 +41,6 @@ jobs:
       - name: Install zip utility
         run: sudo apt-get update && sudo apt-get install -y zip
 
-      # Remove broken widget metadata that causes nbconvert errors
       - name: Sanitize notebooks (fix widgets metadata)
         run: |
           python - << 'PY'
@@ -48,16 +59,14 @@ jobs:
 
               md = data.get("metadata", {})
               widgets = md.get("widgets")
-
               changed = False
-              if isinstance(widgets, dict):
-                  key = "application/vnd.jupyter.widget-state+json"
+              key = "application/vnd.jupyter.widget-state+json"
 
+              if isinstance(widgets, dict):
                   if key in widgets and isinstance(widgets[key], dict) and "state" not in widgets[key]:
                       md.pop("widgets", None)
                       data["metadata"] = md
                       changed = True
-
                   elif key in widgets and not isinstance(widgets[key], dict):
                       md.pop("widgets", None)
                       data["metadata"] = md
@@ -79,28 +88,28 @@ jobs:
           mkdir -p site
 
           find notebooks -name "*.ipynb" -not -path "*/assets/*" -print0 | while IFS= read -r -d '' nb; do
-
             slug=$(dirname "$nb" | sed 's|^notebooks/||')
-            base_name=$(basename "$nb" .ipynb)
-
             out_dir="site/$slug"
             mkdir -p "$out_dir"
 
-            # Convert to HTML
+            echo "[BUILD] $nb -> $out_dir"
+
+            # Convert notebook to HTML
             jupyter nbconvert --to html "$nb" --output notebook.html --output-dir "$out_dir"
 
-            # Make nice URL
+            # Friendly page URL
             cp "$out_dir/notebook.html" "$out_dir/index.html"
 
-            # Copy originals
+            # Copy source notebook
             cp "$nb" "$out_dir/notebook.ipynb"
 
+            # Copy matching .py if present
             py_file="${nb%.ipynb}.py"
             if [ -f "$py_file" ]; then
               cp "$py_file" "$out_dir/notebook.py"
             fi
 
-            # Copy assets
+            # Copy assets folder if present
             if [ -d "notebooks/$slug/assets" ]; then
               cp -r "notebooks/$slug/assets" "$out_dir/"
             fi
@@ -108,82 +117,173 @@ jobs:
             # Create ZIP for downloads
             (
               cd "$out_dir"
-
-              zip -r "${slug}.zip" notebook.html notebook.ipynb notebook.py assets >/dev/null 2>&1 || \
-              zip -r "${slug}.zip" notebook.html notebook.ipynb notebook.py >/dev/null 2>&1
+              if [ -d assets ] && [ -f notebook.py ]; then
+                zip -r "${slug}.zip" notebook.html notebook.ipynb notebook.py assets >/dev/null
+              elif [ -d assets ]; then
+                zip -r "${slug}.zip" notebook.html notebook.ipynb assets >/dev/null
+              elif [ -f notebook.py ]; then
+                zip -r "${slug}.zip" notebook.html notebook.ipynb notebook.py >/dev/null
+              else
+                zip -r "${slug}.zip" notebook.html notebook.ipynb >/dev/null
+              fi
             )
-
           done
 
           python - << 'PY'
+          import html
           import os
 
-          base = "https://evagaiml.github.io/000-website-notebooks"
-          repo = "EvagAIML/000-website-notebooks"
+          base = os.environ["BASE_URL"]
+          repo = os.environ["REPO_PATH"]
 
-          slugs = sorted([
+          slugs = sorted(
               d for d in os.listdir("site")
               if os.path.isdir(os.path.join("site", d))
-          ])
+          )
 
-          html = [
-              "<html><head><meta charset='utf-8'>",
-              "<meta name='viewport' content='width=device-width, initial-scale=1'>",
-              "<title>AI Case Studies</title>",
-              "<style>",
-              "body{font-family:system-ui;margin:40px;max-width:1100px}",
-              ".card{padding:16px 0;border-bottom:1px solid #eee}",
-              ".title{font-size:18px;font-weight:650}",
-              ".links a{margin-right:14px}",
-              ".meta{color:#555;font-size:13px;margin-top:4px}",
-              "</style></head><body>",
-              "<h1>AI Case Studies</h1>",
-              "<p>View each case study, run it in Colab, or download the artifacts:</p>"
-          ]
+          cards = []
+          txt_lines = []
+
+          for slug in slugs:
+              view = f"{base}/{slug}/"
+              html_dl = f"{base}/{slug}/notebook.html"
+              ipynb_dl = f"{base}/{slug}/notebook.ipynb"
+              py_dl = f"{base}/{slug}/notebook.py"
+              zip_dl = f"{base}/{slug}/{slug}.zip"
+              colab = f"https://colab.research.google.com/github/{repo}/blob/main/notebooks/{slug}/{slug}.ipynb"
+              title = slug.replace("__", " | ").replace("-", " ").title()
+
+              txt_lines.append(slug)
+              txt_lines.append(f"VIEW: {view}")
+              txt_lines.append(f"COLAB: {colab}")
+              txt_lines.append(f"ZIP: {zip_dl}")
+              txt_lines.append(f"HTML: {html_dl}")
+              txt_lines.append(f"IPYNB: {ipynb_dl}")
+              txt_lines.append(f"PY: {py_dl}")
+              txt_lines.append("")
+
+              links = [
+                  f"<a href='{html.escape(view, quote=True)}'>View</a>",
+                  f"<a href='{html.escape(colab, quote=True)}'>Run in Colab</a>",
+                  f"<a href='{html.escape(zip_dl, quote=True)}'>Download Code</a>",
+                  f"<a href='{html.escape(html_dl, quote=True)}' download>Download HTML</a>",
+                  f"<a href='{html.escape(ipynb_dl, quote=True)}' download>Download .ipynb</a>",
+                  f"<a href='{html.escape(py_dl, quote=True)}' download>Download .py</a>",
+              ]
+
+              cards.append(
+                  "<div class='card'>"
+                  f"<div class='title'>{html.escape(title)}</div>"
+                  f"<div class='links'>{' '.join(links)}</div>"
+                  f"<div class='meta'>Slug: {html.escape(slug)}</div>"
+                  "</div>"
+              )
 
           with open("site/urls.txt", "w", encoding="utf-8") as f:
+              f.write("\n".join(txt_lines))
 
-              for slug in slugs:
-
-                  view = f"{base}/{slug}/"
-                  html_dl = f"{base}/{slug}/notebook.html"
-                  ipynb_dl = f"{base}/{slug}/notebook.ipynb"
-                  py_dl = f"{base}/{slug}/notebook.py"
-                  zip_dl = f"{base}/{slug}/{slug}.zip"
-
-                  colab = f"https://colab.research.google.com/github/{repo}/blob/main/notebooks/{slug}/{slug}.ipynb"
-
-                  title = slug.replace("__", " | ").replace("-", " ").title()
-
-                  html.append("<div class='card'>")
-                  html.append(f"<div class='title'>{title}</div>")
-                  html.append("<div class='links'>"
-                              f"<a href='{view}'>View</a>"
-                              f"<a href='{colab}'>Run in Colab</a>"
-                              f"<a href='{zip_dl}'>Download Code</a>"
-                              f"<a href='{html_dl}' download>Download HTML</a>"
-                              f"<a href='{ipynb_dl}' download>Download .ipynb</a>"
-                              f"<a href='{py_dl}' download>Download .py</a>"
-                              "</div>")
-                  html.append(f"<div class='meta'>Slug: {slug}</div>")
-                  html.append("</div>")
-
-                  f.write(f"{slug}\n")
-                  f.write(f"VIEW: {view}\n")
-                  f.write(f"COLAB: {colab}\n")
-                  f.write(f"ZIP: {zip_dl}\n")
-                  f.write(f"HTML: {html_dl}\n")
-                  f.write(f"IPYNB: {ipynb_dl}\n")
-                  f.write(f"PY: {py_dl}\n\n")
-
-          html += ["</body></html>"]
+          index_html = f"""<!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>AI Case Studies</title>
+            <style>
+              :root {{
+                --bg: #0b1020;
+                --panel: #121935;
+                --text: #e8ecff;
+                --muted: #aab4e0;
+                --accent: #77a7ff;
+                --border: #273056;
+              }}
+              * {{ box-sizing: border-box; }}
+              body {{
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: var(--bg);
+                color: var(--text);
+              }}
+              .wrap {{
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 40px 20px 60px;
+              }}
+              h1 {{
+                margin: 0 0 10px;
+                font-size: 34px;
+              }}
+              p {{
+                color: var(--muted);
+                margin: 0 0 24px;
+              }}
+              .grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 18px;
+              }}
+              .card {{
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 18px;
+              }}
+              .title {{
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 10px;
+              }}
+              .links {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 10px;
+              }}
+              a {{
+                color: var(--accent);
+                text-decoration: none;
+              }}
+              a:hover {{
+                text-decoration: underline;
+              }}
+              .meta {{
+                color: var(--muted);
+                font-size: 13px;
+              }}
+            </style>
+          </head>
+          <body>
+            <div class="wrap">
+              <h1>AI Case Studies</h1>
+              <p>View each case study, run it in Colab, or download the artifacts.</p>
+              <div class="grid">
+                {''.join(cards) if cards else '<p>No notebooks found.</p>'}
+              </div>
+            </div>
+          </body>
+          </html>
+          """
 
           with open("site/index.html", "w", encoding="utf-8") as f:
-              f.write("\n".join(html))
+              f.write(index_html)
+
+          # Prevent Jekyll from interfering with static files
+          open("site/.nojekyll", "w").close()
           PY
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: site
+          path: ./site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
