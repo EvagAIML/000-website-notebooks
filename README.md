@@ -2,8 +2,8 @@
 
 This repository automatically publishes AI/ML case studies (Jupyter notebooks) to GitHub Pages.
 
-Live site:
-https://evagaiml.github.io/000-website-notebooks/
+Live Website: https://time-chuck-90820705.figma.site/
+Live Links: https://evagaiml.github.io/000-website-notebooks/
 
 ## How it works
 On every push to `main`, GitHub Actions:
