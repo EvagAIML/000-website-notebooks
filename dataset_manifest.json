@@ -1,7 +1,7 @@
 {
   "seed-identification__multi-cls__cnn-tl-exp": {
-    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/v1/seed-identification__multi-cls__cnn-tl-exp__dataset__v1.zip",
-    "sha256": "31629d6d13fa9b4a2f1f46bbae653109bea761d7880915db58fdd2721056df39",
-    "extract_to": "seed-identification__multi-cls__cnn-tl-exp__dataset__v1"
+    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/v2/seed-identification__multi-cls__cnn-tl-exp__dataset__v2.zip",
+    "sha256": "71d557842b3bddbd4101aeb08dc9830045f568571c777eb842b5f2150e29a5bc",
+    "extract_to": "seed-identification__multi-cls__cnn-tl-exp__dataset__v2"
   }
 }
