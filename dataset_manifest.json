@@ -1,0 +1,7 @@
+{
+  "seed-identification__multi-cls__cnn-tl-exp": {
+    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/v1/seed-identification__multi-cls__cnn-tl-exp__dataset__v1.zip",
+    "sha256": "31629d6d13fa9b4a2f1f46bbae653109bea761d7880915db58fdd2721056df39",
+    "extract_to": "seed-identification__multi-cls__cnn-tl-exp__dataset__v1"
+  }
+}
