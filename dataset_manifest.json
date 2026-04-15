@@ -3,5 +3,25 @@
     "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/seed-identification__multi-cls__cnn-tl-exp__data-v2/seed-identification__multi-cls__cnn-tl-exp__dataset__v2.zip",
     "sha256": "71d557842b3bddbd4101aeb08dc9830045f568571c777eb842b5f2150e29a5bc",
     "extract_to": "seed-identification__multi-cls__cnn-tl-exp__dataset__v2"
+  },
+  "turbine-failure-pred__bin-cls__dnn-exp": {
+    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/turbine-failure-pred__bin-cls__dnn-exp__data-v1/turbine-failure-pred__bin-cls__dnn-exp__dataset__v1.zip",
+    "sha256": "62bdb3d89fc2fcd41109a4ef0b3bb66db4e68b57ab7e5fdaab50e67786009b7e",
+    "extract_to": "turbine-failure-pred__bin-cls__dnn-exp__dataset__v1"
+  },
+  "visa-approval-pred__bin-cls__ensemble-imb-exp": {
+    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/visa-approval-pred__bin-cls__ensemble-imb-exp__data-v1/visa-approval-pred__bin-cls__ensemble-imb-exp__dataset__v1.zip",
+    "sha256": "fcac5ca7529de1013a282e7c05171fa1d2b1afa5c9e37bd54af022dd30052d96",
+    "extract_to": "visa-approval-pred__bin-cls__ensemble-imb-exp__dataset__v1"
+  },
+  "medical-diagnosis-assist__qa__rag-exp": {
+    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/medical-diagnosis-assist__qa__rag-exp__data-v1/medical-diagnosis-assist__qa__rag-exp__dataset__v1.zip",
+    "sha256": "c4971c133da5918a7abe6104a03ba2eb061da234cb5ff25f1c47151b78874a07",
+    "extract_to": "medical-diagnosis-assist__qa__rag-exp__dataset__v1"
+  },
+  "retail-revenue-forecast__reg__ensemble-exp": {
+    "url": "https://github.com/EvagAIML/000-website-notebooks-data/releases/download/retail-revenue-forecast__reg__ensemble-exp__data-v1/retail-revenue-forecast__reg__ensemble-exp__dataset__v1.zip",
+    "sha256": "f77717cd180ea9e092f40a5cf43d2d66896f1c3f898ec369831d86f95dc49311",
+    "extract_to": "retail-revenue-forecast__reg__ensemble-exp__dataset__v1"
   }
 }
