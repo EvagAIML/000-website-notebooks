@@ -1,6 +1,7 @@
 # 000-website-notebooks
 This repository automatically publishes AI/ML case studies (Jupyter notebooks) to GitHub Pages.
 
+
 ## How it works
 On every push to `main`, GitHub Actions:
 - Converts each notebook in `/notebooks/**` into a static HTML page
@@ -10,6 +11,7 @@ On every push to `main`, GitHub Actions:
   - notebook.ipynb
   - notebook.py (if present)
   - assets/ (if present)
+
 
 ## Repo structure
 - `notebooks/<case-study-slug>/` contains your source notebooks
@@ -21,10 +23,13 @@ Naming convention:
 
 For instructions on updating or adding case studies, see `CONTRIBUTING.md`.
 
+
 ## Assets
 
 Live Website: https://time-chuck-90820705.figma.site/
 
 Live Links: https://evagaiml.github.io/000-website-notebooks/
+
+
 
 <!-- trigger build -->
