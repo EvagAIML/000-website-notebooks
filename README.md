@@ -24,11 +24,11 @@ Naming convention:
 For instructions on updating or adding case studies, see `CONTRIBUTING.md`.
 
 
-## Assets
+## Links to Live Assets
 
-Live Website: https://time-chuck-90820705.figma.site/
+Website: https://time-chuck-90820705.figma.site/
 
-Live Links: https://evagaiml.github.io/000-website-notebooks/
+Asset Links: https://evagaiml.github.io/000-website-notebooks/
 
 
 
