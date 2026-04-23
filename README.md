@@ -1,5 +1,5 @@
 # 000-website-notebooks
-This repository automatically publishes AI/ML Colab Notebooks to GitHub Pages, and publishes them to a live site. All notebooks function fully in Google Colab and can be downloaded, but may not render in GitHub due to metadata incompatibility or output complexity
+This repository automatically publishes AI/ML Colab Notebooks to GitHub Pages, and [publishes them to a live site](#links-to-live-assets). All notebooks function fully in Google Colab and can be downloaded, but may not render in GitHub due to metadata incompatibility or output complexity.
 
 
 ## How it works
